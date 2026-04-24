@@ -1,6 +1,6 @@
 {
   "name": "guardagent",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Telemetry & Monitoring Agent for Guard-Core TS and its thin adapters. Package name reserved — initial release pending.",
   "keywords": [
     "guard-core",
@@ -21,8 +21,16 @@
   "bugs": {
     "url": "https://github.com/rennf93/guard-agent-ts/issues"
   },
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": {
+      "import": "./index.js"
+    }
+  },
   "files": [
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "index.js"
   ]
 }
