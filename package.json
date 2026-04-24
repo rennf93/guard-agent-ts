@@ -1,0 +1,28 @@
+{
+  "name": "guard-agent-ts",
+  "version": "0.0.1",
+  "description": "Telemetry & Monitoring Agent for Guard-Core TS and its thin adapters. Package name reserved — initial release pending.",
+  "keywords": [
+    "guard-core",
+    "guard-core-ts",
+    "telemetry",
+    "monitoring",
+    "security",
+    "middleware",
+    "agent"
+  ],
+  "author": "Renzo Franceschini <rennf93@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/rennf93/guard-agent-ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rennf93/guard-agent-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rennf93/guard-agent-ts/issues"
+  },
+  "files": [
+    "README.md",
+    "LICENSE"
+  ]
+}
