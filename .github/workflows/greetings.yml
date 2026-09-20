@@ -1,0 +1,47 @@
+name: Greetings
+
+on: [pull_request_target, issues]
+
+jobs:
+  greeting:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+    - uses: actions/first-interaction@1c4688942c71f71d4f5502a26ea67c331730fa4d # v3
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        issue_message: |
+            Thanks for opening your first issue on **guardagent**!
+
+            To help us triage quickly, please make sure your report includes:
+            - A clear reproduction (a short snippet or failing test is ideal)
+            - Output of `node --version && pnpm --version`
+            - The Node version range supported (`>=20`) and which version you're on
+            - `npm ls guardagent ioredis` so we can see installed versions
+            - The framework adapter you're sending events from (guard-core-ts adapters for Express, Fastify, Hono, NestJS) and its version
+            - Operating system, transport configuration (HTTP endpoint, batching, signing), and Redis state if relevant
+            - Logs / tracebacks (mask any API tokens before posting)
+
+            A few pointers:
+            - Read [README.md](../blob/master/README.md) for configuration and reliability semantics.
+            - **Security vulnerability?** Do **not** open a public issue - please use GitHub's private vulnerability reporting.
+            - Questions rather than a bug? Ask in Discord `#help`: https://discord.gg/ZW7ZJbjMkK
+
+            Thanks again - a maintainer will be with you soon.
+        pr_message: |
+            Thanks for opening your first pull request on **guardagent**!
+
+            Quick checklist before review (most of these are enforced by CI, but worth a glance):
+            - [ ] `pnpm lint` - strict TypeScript typecheck passes
+            - [ ] `pnpm test` - full test suite passes (unit, transport contract, integration smoke, Redis persistence)
+            - [ ] `pnpm build` - ESM + CJS bundles and type declarations build cleanly
+            - [ ] No `@ts-ignore` / `eslint-disable` shortcuts; pre-existing violations in touched files are fixed
+            - [ ] No em-dashes in comments, docs, or commit messages
+            - [ ] If you changed public API (client, transport, buffer, models), updated README.md and the package skill
+            - [ ] No real API tokens or SaaS endpoints committed in fixtures/examples
+
+            Questions while you work: Discord `#help`, https://discord.gg/ZW7ZJbjMkK
+
+            Welcome aboard - a maintainer will review shortly.

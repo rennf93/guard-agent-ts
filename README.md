@@ -2,7 +2,33 @@
 
 Telemetry & Monitoring Agent for the [guard ecosystem](https://github.com/rennf93) (TypeScript / Node.js). Companion agent to [guard-core-ts](https://github.com/rennf93/guard-core-ts) and its thin adapters.
 
-**Status:** Reserved namespace. Implementation pending — see [guard-core-ts](https://github.com/rennf93/guard-core-ts) for the reference engine and roadmap.
+**Status:** Implemented (v0.1.0). TypeScript port of the [guard-agent](https://github.com/rennf93/guard-agent) semantics, reporting to the Guard Core App ingestion API.
+
+## Install
+
+```bash
+pnpm add guardagent
+pnpm add ioredis   # optional: crash-recovery persistence
+```
+
+## Usage
+
+```ts
+import { GuardAgent, AgentConfig } from "guardagent";
+
+const agent = new GuardAgent(AgentConfig.create({
+  endpoint: "https://api.guard-core.com",
+  apiKey: process.env.GUARD_API_KEY!,
+  projectId: "my-project",
+}));
+await agent.start();
+
+agent.sendEvent({ kind: "security_event", payload: { /* ... */ } });
+
+await agent.stop(); // final flush + confirm
+```
+
+At-least-once delivery, 413 split-or-drop, Retry-After backoff, permanent-rejection handling, degraded-state detection, and optional Redis crash recovery. See [AGENTS.md](AGENTS.md) for the full reliability semantics.
 
 ## About
 
