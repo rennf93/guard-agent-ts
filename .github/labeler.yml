@@ -1,0 +1,74 @@
+"area: client":
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/agent.ts
+          - tests/agent.test.ts
+
+"area: buffer":
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/buffer.ts
+          - tests/buffer.test.ts
+
+"area: transport":
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/transport.ts
+          - tests/transport.test.ts
+
+"area: persistence":
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/redis.ts
+          - tests/redis-persistence.test.ts
+
+"area: config":
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/config.ts
+          - tests/config.test.ts
+
+"area: models":
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/models.ts
+          - tests/models.test.ts
+
+"area: utils":
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/utils.ts
+          - src/signing.ts
+          - src/install-id.ts
+          - src/logger.ts
+          - tests/utils.test.ts
+          - tests/install-id.test.ts
+          - tests/logger.test.ts
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - tests/**
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - README.md
+          - AGENTS.md
+          - CLAUDE.md
+          - LICENSE
+          - .agents/**
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**
+
+build:
+  - changed-files:
+      - any-glob-to-any-file:
+          - package.json
+          - pnpm-lock.yaml
+          - tsconfig.json
+          - tsup.config.ts
+          - vitest.config.ts
