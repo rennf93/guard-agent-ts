@@ -270,13 +270,17 @@ export class HttpTransport {
 
     let body: Buffer = Buffer.from(json, "utf8");
     const headers: Record<string, string> = { ...this.defaultHeaders };
-    if (this.config.compressionEnabled && body.length >= this.config.compressionThreshold) {
-      body = gzipSync(body);
-      headers["Content-Encoding"] = "gzip";
-    }
+    // The server verifies the HMAC over the UNCOMPRESSED body (it
+    // decompresses before verification, mirroring guard-core-api
+    // telemetry_router.py:113-125), so sign the raw JSON bytes
+    // regardless of whether the wire body gets compressed.
     const signature = signPayload(body, this.config.payloadSigningSecret);
     if (signature !== null) {
       headers["X-Payload-Signature"] = signature;
+    }
+    if (this.config.compressionEnabled && body.length >= this.config.compressionThreshold) {
+      body = gzipSync(body);
+      headers["Content-Encoding"] = "gzip";
     }
     this.bytesSent += body.length;
 
