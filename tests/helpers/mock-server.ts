@@ -148,8 +148,11 @@ export class MockIngestionServer {
 
     if (this.options.signingSecret !== undefined) {
       const provided = headers["x-payload-signature"];
+      // Server-accurate: the API decompresses before verifying the HMAC
+      // (guard-core-api telemetry_router.py:113-125), so the signature
+      // covers the UNCOMPRESSED body.
       const expected = `v1=${
-        createHmac("sha256", this.options.signingSecret).update(rawBody).digest("hex")
+        createHmac("sha256", this.options.signingSecret).update(bodyBuffer).digest("hex")
       }`;
       if (provided !== expected) {
         this.requests.push({ ...recorded, body: null });

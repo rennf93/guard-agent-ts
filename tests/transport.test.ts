@@ -135,7 +135,7 @@ describe("HttpTransport request contract", () => {
     expect(statusBody["last_flush"]).toBeNull();
   });
 
-  it("gzip-compresses bodies at or above the threshold and signs them", async () => {
+  it("gzip-compresses bodies at or above the threshold and signs the UNCOMPRESSED body", async () => {
     const client = transport({
       payloadSigningSecret: "signing-secret",
       compressionThreshold: 256,
@@ -143,8 +143,13 @@ describe("HttpTransport request contract", () => {
     await client.sendEvents(events(3, 200));
     const [request] = server.requestsFor("/api/v1/events");
     expect(request?.contentEncoding).toBe("gzip");
+    // Server-accurate: the API decompresses before verifying the HMAC
+    // (guard-core-api telemetry_router.py:113-125), so the signature
+    // covers the uncompressed JSON, not the gzip bytes.
     const expected = `v1=${
-      createHmac("sha256", "signing-secret").update(request?.rawBody ?? Buffer.alloc(0)).digest("hex")
+      createHmac("sha256", "signing-secret")
+        .update(JSON.stringify(request?.body))
+        .digest("hex")
     }`;
     expect(request?.headers["x-payload-signature"]).toBe(expected);
     expect((request?.body as Record<string, unknown>)["events"]).toHaveLength(3);
