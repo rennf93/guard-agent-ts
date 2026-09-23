@@ -1,6 +1,6 @@
 {
   "name": "guardagent",
-  "version": "0.1.0",
+  "version": "3.0.2",
   "description": "Telemetry & Monitoring Agent for Guard-Core TS and its thin adapters. Buffers security events and metrics, flushes them to the guard-core-app ingestion API with retry, backoff, payload-size split, and optional Redis crash recovery.",
   "keywords": [
     "guard-core",
