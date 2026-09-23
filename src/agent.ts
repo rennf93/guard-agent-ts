@@ -313,11 +313,25 @@ export class GuardAgent {
   }
 
   /**
+   * Describe where unsent items wait for retry, based on whether a Redis
+   * handler is attached to the buffer. Without Redis the items live only in
+   * the in-memory buffer, so claiming Redis retention would be misleading
+   * (mirrors Python _client_flush.FlushMixin._retention_description).
+   */
+  private retentionDescription(kind: string): string {
+    const hasRedis = this.buffer.redisHandler !== null;
+    const memoryPart = "requeued in memory";
+    const redisPart = hasRedis ? " and retained in Redis" : "";
+    return `${memoryPart}${redisPart} (${kind})`;
+  }
+
+  /**
    * Flush events with per-kind failure streaks and backoff, mirroring
    * _flush_events. On failure the batch is requeued in memory, its Redis
-   * keys retained, and a per-kind retry-after enforced before the next
-   * attempt. A transport exception is re-raised (caught by flushBuffer)
-   * after the requeue, mirroring the Python control flow.
+   * keys retained when a Redis handler is attached, and a per-kind
+   * retry-after enforced before the next attempt. A transport exception is
+   * re-raised (caught by flushBuffer) after the requeue, mirroring the
+   * Python control flow.
    */
   private async flushEvents(): Promise<void> {
     if (nowSeconds() < this.eventsRetryAfter) return;
@@ -361,7 +375,7 @@ export class GuardAgent {
     if (this.eventsFailureStreak === 1) {
       this.logger.warn(
         `Failed to send ${events.length} events; ` +
-          `requeued in memory and retained in Redis for retry; ` +
+          `${this.retentionDescription("events")} for retry; ` +
           `backing off up to ${delay.toFixed(0)}s between attempts`,
       );
     }
@@ -417,7 +431,7 @@ export class GuardAgent {
     if (this.metricsFailureStreak === 1) {
       this.logger.warn(
         `Failed to send ${metrics.length} metrics; ` +
-          `requeued in memory and retained in Redis for retry; ` +
+          `${this.retentionDescription("metrics")} for retry; ` +
           `backing off up to ${delay.toFixed(0)}s between attempts`,
       );
     }

@@ -9,7 +9,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { GuardAgent } from "../src/agent.js";
 import { MockIngestionServer } from "./helpers/mock-server.js";
-import { makeEvent, testAgentConfig } from "./helpers/test-utils.js";
+import { collectingLogger, makeEvent, testAgentConfig } from "./helpers/test-utils.js";
 
 const REDIS_URL = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
 const API_KEY = "test-api-key-1234";
@@ -139,5 +139,39 @@ describe("GuardAgent Redis crash recovery", () => {
     await agent.stop();
     // stop() flushed the buffered event to the ingestion API despite no redis.
     expect(agent.eventsSent).toBe(1);
+  });
+
+  it("mentions Redis retention in the partial-failure warning when Redis is attached", async () => {
+    if (!redisAvailable) return;
+    const keyPrefix = `guard:agent:test-${randomUUID()}`;
+    const logger = collectingLogger();
+    const agent = new GuardAgent({
+      ...testAgentConfig({
+        endpoint: "http://127.0.0.1:9", // dead endpoint: the flush fails
+        flushInterval: 300,
+        retryAttempts: 0,
+        logger,
+      }),
+      redis: { url: REDIS_URL, keyPrefix },
+    } as ConstructorParameters<typeof GuardAgent>[0]);
+    await agent.start();
+
+    await agent.sendEvent({ ...makeEvent(), eventType: "warning_redis" });
+    await agent.flushBuffer();
+
+    const warning = logger
+      .warnings()
+      .find((message) => message.includes("Failed to send 1 events"));
+    expect(warning).toBeDefined();
+    expect(warning).toContain("requeued in memory and retained in Redis (events) for retry");
+
+    // Clean up abandoned resources the same way the crash-recovery test does
+    // (stop() flushes again and fails against the dead endpoint, by design).
+    await agent.stop();
+    await (agent as unknown as { buffer: { stopAutoFlush(): Promise<void> } }).buffer.stopAutoFlush();
+    const leakedHandler = (
+      agent as unknown as { redisHandler: { close(): Promise<void> } | null }
+    ).redisHandler;
+    if (leakedHandler?.close) await leakedHandler.close();
   });
 });
