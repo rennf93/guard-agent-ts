@@ -1,0 +1,128 @@
+name: Release Gate
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions: {}
+
+jobs:
+  test:
+    name: Test at tag (node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22]
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm lint
+
+      - name: Build (ESM + CJS + types)
+        run: pnpm build
+
+      - name: Test (unit + transport contract + Redis persistence)
+        run: pnpm test:coverage
+        env:
+          REDIS_URL: redis://localhost:6379
+
+  pack-smoke:
+    name: Tarball consumable
+    needs: [test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Build and pack guardagent
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          mkdir -p /tmp/pack
+          pnpm pack --pack-destination /tmp/pack
+
+      - name: Install the tarball into a scratch project and exercise the API
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/scratch
+          cd /tmp/scratch
+          printf '{"name":"release-gate-scratch","private":true,"type":"module"}\n' > package.json
+          pnpm add /tmp/pack/guardagent-*.tgz
+          node --input-type=module -e "
+            import { GuardAgent, KNOWN_EVENT_TYPES, METRIC_TYPES } from 'guardagent';
+            if (typeof GuardAgent !== 'function') throw new Error('GuardAgent missing');
+            if (KNOWN_EVENT_TYPES.length === 0 || METRIC_TYPES.length === 0) throw new Error('model constants missing');
+            console.log('pack smoke ok: guardagent imports from the packed tarball');
+          "
+
+  publish-checklist:
+    name: npm publish is manual (owner-gated)
+    needs: [test, pack-smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Post the publish checklist on the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          body="The tag \`$TAG\` passed the release gate (typecheck, build, full test suite with Redis persistence, and a tarball install smoke).
+
+          npm publishing is intentionally manual and owner-gated. To publish:
+
+          \`\`\`bash
+          git checkout $TAG
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm publish --access public
+          \`\`\`
+
+          Confirm the version in package.json matches \`$TAG\` before publishing."
+
+          gh release comment "$TAG" --body "$body"

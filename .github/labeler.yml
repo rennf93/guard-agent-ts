@@ -50,6 +50,11 @@ tests:
       - any-glob-to-any-file:
           - tests/**
 
+examples:
+  - changed-files:
+      - any-glob-to-any-file:
+          - examples/**
+
 documentation:
   - changed-files:
       - any-glob-to-any-file:
@@ -58,6 +63,8 @@ documentation:
           - CLAUDE.md
           - LICENSE
           - .agents/**
+          - docs/**
+          - mkdocs.yml
 
 ci:
   - changed-files:
