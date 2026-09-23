@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 
 import { GuardAgent } from "../src/agent.js";
 import { MockIngestionServer } from "./helpers/mock-server.js";
-import { makeEvent, testAgentConfig } from "./helpers/test-utils.js";
+import { collectingLogger, makeEvent, testAgentConfig } from "./helpers/test-utils.js";
 
 const API_KEY = "test-api-key-1234";
 
@@ -183,6 +183,23 @@ describe("GuardAgent flush semantics", () => {
     const keys = bodies.map((body) => body.events[0]?.idempotency_key);
     expect(keys[0]).toBeTruthy();
     expect(keys[0]).toBe(keys[1]);
+  });
+
+  it("describes memory-only retention in the partial-failure warning without Redis", async () => {
+    // The warning must not claim Redis retention when no Redis handler is
+    // attached: without Redis the requeued items live solely in memory.
+    const logger = collectingLogger();
+    const agent = newAgent({ flushInterval: 300, retryAttempts: 0, logger });
+    server.behavior = () => ({ status: 503, body: { detail: "transient" } });
+    await agent.sendEvent(event(1));
+    await agent.flushBuffer();
+
+    const warning = logger
+      .warnings()
+      .find((message) => message.includes("Failed to send 1 events"));
+    expect(warning).toBeDefined();
+    expect(warning).toContain("requeued in memory (events) for retry");
+    expect(warning).not.toContain("retained in Redis");
   });
 });
 
