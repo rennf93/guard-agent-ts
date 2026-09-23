@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - 'v*'
+  release:
+    types: [created]
+  workflow_dispatch:
 
 permissions: {}
 
@@ -28,7 +31,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - name: Checkout tag
+      - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -61,7 +64,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Checkout tag
+      - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -94,35 +97,38 @@ jobs:
             console.log('pack smoke ok: guardagent imports from the packed tarball');
           "
 
-  publish-checklist:
-    name: npm publish is manual (owner-gated)
+  publish:
+    name: Publish guardagent to npm (trusted publishing)
     needs: [test, pack-smoke]
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
+      id-token: write
     steps:
-      - name: Checkout tag
+      - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Post the publish checklist on the release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Ensure npm supports trusted publishing (>= 11.5.1)
         run: |
-          body="The tag \`$TAG\` passed the release gate (typecheck, build, full test suite with Redis persistence, and a tarball install smoke).
+          npm install -g npm@latest
+          npm --version
 
-          npm publishing is intentionally manual and owner-gated. To publish:
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-          \`\`\`bash
-          git checkout $TAG
-          pnpm install --frozen-lockfile
-          pnpm build
-          pnpm publish --access public
-          \`\`\`
+      - name: Build (ESM + CJS + types)
+        run: pnpm build
 
-          Confirm the version in package.json matches \`$TAG\` before publishing."
-
-          gh release comment "$TAG" --body "$body"
+      - name: Publish
+        run: npm publish --access public --provenance
