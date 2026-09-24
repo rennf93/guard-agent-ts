@@ -2,7 +2,7 @@
 
 Telemetry & Monitoring Agent for the [guard ecosystem](https://github.com/rennf93) (TypeScript / Node.js). Companion agent to [guard-core-ts](https://github.com/rennf93/guard-core-ts) and its thin adapters.
 
-Docs: https://rennf93.github.io/guard-agent-ts/
+Docs: <https://rennf93.github.io/guard-agent-ts/>
 
 **Status:** Released (v3.0.2 on npm). TypeScript port of the [guard-agent](https://github.com/rennf93/guard-agent) semantics, reporting to the Guard Core App ingestion API.
 
