@@ -3,6 +3,15 @@ Release Notes
 
 ___
 
+Unreleased
+----------
+
+### Fixed
+
+- **The wire version stamp now reports the release version (3.0.2) instead of the initial implementation stub.** `AGENT_VERSION` in `src/version.ts` was still hardcoded to `0.1.0` from before the 3.0.2 release train, so the `guardagent/0.1.0` User-Agent header and the `agent_version` batch envelope field lagged the package version (and every other family agent ships 3.0.2). The constant is now derived from `package.json` (inlined by tsup/vitest), so `make bump-version` cannot leave the stamp behind; a derivation test pins the equality.
+
+___
+
 v3.0.2 (2026-09-24)
 -------------------
 

@@ -5,7 +5,7 @@ Guidance for AI agents (including Claude Code) working in this repository.
 
 guard-agent-ts (npm package `guardagent`) is the TypeScript telemetry and monitoring agent for the Guard security ecosystem. It is a dependency-free (optional ioredis peer) Node.js >= 20 client that buffers security events from guard-core-ts adapters and ships them to the Guard Core App ingestion API with at-least-once delivery, crash-recovery persistence, and a hard guarantee: telemetry failures never propagate into the host request path.
 
-Version 0.1.0. License MIT. ESM + CJS dual build via tsup; typed public API.
+Version 3.0.2. License MIT. ESM + CJS dual build via tsup; typed public API.
 
 ## Ecosystem Position
 
